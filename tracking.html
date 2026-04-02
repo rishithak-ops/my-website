@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LUMIÈRE — Track Your Order</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #faf7f2;
+      --warm-white: #f5f0e8;
+      --sand: #e8ddd0;
+      --blush: #d4a8a0;
+      --deep-rose: #8b4a4a;
+      --charcoal: #2a2420;
+      --mid: #6b5c54;
+      --gold: #c9a96e;
+      --green: #4a7c5a;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Jost', sans-serif;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--charcoal);
+      font-family: var(--font-body);
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* ── CURSOR ── */
+    * { cursor: none; }
+    #cursor {
+      width: 10px; height: 10px;
+      background: var(--deep-rose); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transition: transform 0.15s ease, width 0.2s, height 0.2s;
+      transform: translate(-50%, -50%);
+    }
+    #cursor.big { width: 32px; height: 32px; background: transparent; border: 1.5px solid var(--deep-rose); }
+
+    /* ── NAV ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(250,247,242,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,169,110,0.2);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.6rem; font-weight: 300;
+      letter-spacing: 0.35em; color: var(--charcoal);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-link {
+      font-size: 0.7rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--mid);
+      text-decoration: none; display: flex;
+      align-items: center; gap: 6px; transition: color 0.3s;
+    }
+    .nav-link:hover { color: var(--deep-rose); }
+
+    /* ── HERO BANNER ── */
+    .track-hero {
+      background: var(--charcoal);
+      padding: 48px 80px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .track-hero-text h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 3vw, 3rem);
+      font-weight: 300; color: var(--cream);
+      margin-bottom: 8px;
+    }
+    .track-hero-text h1 em { font-style: italic; color: var(--gold); }
+    .track-hero-text p { font-size: 0.8rem; color: rgba(250,247,242,0.55); letter-spacing: 0.1em; }
+    .track-hero-search {
+      display: flex; gap: 0; max-width: 440px; width: 100%;
+    }
+    .track-input {
+      flex: 1; padding: 14px 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(201,169,110,0.3);
+      border-right: none;
+      color: var(--cream); font-family: var(--font-body);
+      font-size: 0.85rem; outline: none;
+      transition: border-color 0.3s;
+    }
+    .track-input::placeholder { color: rgba(250,247,242,0.35); }
+    .track-input:focus { border-color: var(--gold); }
+    .track-btn {
+      padding: 14px 24px;
+      background: var(--gold); color: var(--charcoal);
+      border: none; font-family: var(--font-body);
+      font-size: 0.7rem; letter-spacing: 0.2em;
+      text-transform: uppercase; transition: background 0.3s;
+    }
+    .track-btn:hover { background: #b8904e; }
+
+    /* ── MAIN LAYOUT ── */
+    .track-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0; padding: 0;
+      min-height: calc(100vh - 200px);
+    }
+
+    .track-left { padding: 48px 56px; }
+    .track-right {
+      background: var(--warm-white);
+      border-left: 1px solid var(--sand);
+      padding: 48px 36px;
+    }
+
+    /* ── ORDER HEADER ── */
+    .order-header {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 36px;
+      padding-bottom: 28px; border-bottom: 1px solid var(--sand);
+    }
+    .order-id-label {
+      font-size: 0.65rem; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--gold);
+      display: block; margin-bottom: 6px;
+    }
+    .order-id-value {
+      font-family: var(--font-display);
+      font-size: 1.8rem; font-weight: 400;
+    }
+    .order-date { font-size: 0.75rem; color: var(--mid); margin-top: 4px; }
+
+    .order-status-pill {
+      padding: 8px 20px; border-radius: 40px;
+      font-size: 0.65rem; letter-spacing: 0.2em;
+      text-transform: uppercase; font-weight: 500;
+    }
+    .status-shipped { background: rgba(201,169,110,0.15); color: #8b6a30; border: 1px solid rgba(201,169,110,0.4); }
+    .status-delivered { background: rgba(74,124,90,0.12); color: var(--green); border: 1px solid rgba(74,124,90,0.3); }
+    .status-processing { background: rgba(139,74,74,0.1); color: var(--deep-rose); border: 1px solid rgba(139,74,74,0.25); }
+    .status-outfordelivery { background: rgba(42,36,32,0.08); color: var(--charcoal); border: 1px solid var(--sand); }
+
+    /* ── PROGRESS TRACKER ── */
+    .section-label {
+      font-size: 0.65rem; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--gold);
+      display: block; margin-bottom: 28px;
+    }
+
+    .progress-track {
+      position: relative; margin-bottom: 48px;
+    }
+
+    /* Connecting line */
+    .progress-line {
+      position: absolute; left: 19px; top: 20px;
+      width: 2px; bottom: 20px;
+      background: var(--sand); z-index: 0;
+    }
+    .progress-line-fill {
+      position: absolute; left: 0; top: 0;
+      width: 100%; background: var(--green);
+      transition: height 1.2s ease;
+    }
+
+    .progress-steps { position: relative; z-index: 1; }
+
+    .progress-step {
+      display: flex; gap: 20px;
+      margin-bottom: 0; padding: 0 0 32px 0;
+      align-items: flex-start;
+    }
+    .progress-step:last-child { padding-bottom: 0; }
+
+    .step-dot {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 2px solid var(--sand);
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+      transition: all 0.5s ease; position: relative; z-index: 2;
+    }
+    .step-dot.done {
+      background: var(--green); border-color: var(--green);
+      color: white; font-size: 0.85rem;
+    }
+    .step-dot.active {
+      background: var(--charcoal); border-color: var(--charcoal);
+      color: white;
+      box-shadow: 0 0 0 5px rgba(42,36,32,0.1);
+      animation: pulse 2s infinite;
+    }
+    .step-dot.pending { background: var(--cream); border-color: var(--sand); color: var(--sand); }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 5px rgba(42,36,32,0.1); }
+      50% { box-shadow: 0 0 0 10px rgba(42,36,32,0.05); }
+    }
+
+    .step-content { flex: 1; padding-top: 6px; }
+    .step-name {
+      font-size: 0.9rem; font-weight: 400;
+      color: var(--charcoal); margin-bottom: 3px;
+    }
+    .step-name.pending-text { color: var(--mid); }
+    .step-desc { font-size: 0.75rem; color: var(--mid); line-height: 1.6; margin-bottom: 4px; }
+    .step-time {
+      font-size: 0.65rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .step-time.pending-time { color: var(--sand); }
+
+    /* ── LIVE UPDATES ── */
+    .live-updates { margin-bottom: 40px; }
+    .update-item {
+      display: flex; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--sand);
+      animation: fadeIn 0.5s ease both;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .update-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold); flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .update-dot.green { background: var(--green); }
+    .update-text { font-size: 0.8rem; color: var(--charcoal); line-height: 1.6; }
+    .update-location { font-size: 0.7rem; color: var(--mid); margin-top: 2px; }
+    .update-time { font-size: 0.65rem; color: var(--mid); letter-spacing: 0.08em; flex-shrink: 0; padding-top: 4px; }
+
+    /* ── MAP PLACEHOLDER ── */
+    .map-section { margin-bottom: 36px; }
+    .map-box {
+      width: 100%; height: 200px;
+      background: linear-gradient(135deg, #e8e0d8, #d4c8bc);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .map-route {
+      position: absolute; inset: 0;
+    }
+    .map-label {
+      font-family: var(--font-display);
+      font-size: 1rem; font-style: italic;
+      color: var(--mid); opacity: 0.6;
+    }
+    .map-pin {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: bounce 1.5s ease infinite;
+    }
+    .map-pin.origin { top: 30%; left: 20%; }
+    .map-pin.current { top: 45%; left: 55%; animation-delay: 0.3s; }
+    .map-pin.dest { top: 25%; right: 15%; animation-delay: 0.6s; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    .map-path {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    /* ── RIGHT PANEL ── */
+    .section-title-sm {
+      font-family: var(--font-display);
+      font-size: 1.3rem; font-weight: 400;
+      margin-bottom: 20px; color: var(--charcoal);
+    }
+    .section-title-sm span { color: var(--gold); font-style: italic; }
+
+    /* Order Items */
+    .order-items-list { margin-bottom: 28px; }
+    .track-item {
+      display: flex; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--sand);
+    }
+    .track-item-img {
+      width: 60px; height: 75px;
+      background: var(--sand); flex-shrink: 0;
+      display: flex; align-items: center;
+      justify-content: center; font-size: 1.5rem;
+      position: relative;
+    }
+    .track-item-qty {
+      position: absolute; top: -6px; right: -6px;
+      width: 18px; height: 18px;
+      background: var(--charcoal); color: white;
+      border-radius: 50%; font-size: 0.6rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .track-item-name { font-family: var(--font-display); font-size: 0.9rem; margin-bottom: 3px; }
+    .track-item-variant { font-size: 0.68rem; color: var(--mid); margin-bottom: 5px; }
+    .track-item-price { font-size: 0.8rem; color: var(--deep-rose); }
+
+    /* Delivery Info */
+    .delivery-card {
+      padding: 20px; background: white;
+      border: 1px solid var(--sand); margin-bottom: 20px;
+    }
+    .delivery-card h4 {
+      font-size: 0.65rem; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .delivery-name { font-family: var(--font-display); font-size: 1rem; margin-bottom: 4px; }
+    .delivery-addr { font-size: 0.78rem; color: var(--mid); line-height: 1.7; }
+
+    /* ETA Card */
+    .eta-card {
+      padding: 24px; text-align: center;
+      background: var(--charcoal); color: var(--cream);
+      margin-bottom: 20px;
+    }
+    .eta-label { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(250,247,242,0.55); margin-bottom: 8px; }
+    .eta-date { font-family: var(--font-display); font-size: 1.6rem; font-weight: 300; color: var(--gold); margin-bottom: 4px; }
+    .eta-sub { font-size: 0.72rem; color: rgba(250,247,242,0.55); }
+
+    /* Agent Card */
+    .agent-card {
+      padding: 18px 20px;
+      border: 1px solid var(--sand); background: white;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px;
+    }
+    .agent-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--sand); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .agent-name { font-size: 0.85rem; font-weight: 400; margin-bottom: 2px; }
+    .agent-label { font-size: 0.65rem; color: var(--mid); letter-spacing: 0.1em; text-transform: uppercase; }
+    .agent-actions { margin-left: auto; display: flex; gap: 8px; }
+    .agent-btn {
+      padding: 8px 14px; background: none;
+      border: 1px solid var(--sand); font-size: 0.8rem;
+      color: var(--mid); transition: all 0.3s;
+    }
+    .agent-btn:hover { border-color: var(--charcoal); color: var(--charcoal); }
+
+    /* Help Section */
+    .help-card {
+      padding: 18px 20px;
+      background: rgba(201,169,110,0.08);
+      border: 1px solid rgba(201,169,110,0.25);
+    }
+    .help-card p { font-size: 0.75rem; color: var(--mid); line-height: 1.7; margin-bottom: 12px; }
+    .help-links { display: flex; gap: 10px; flex-wrap: wrap; }
+    .help-link {
+      font-size: 0.65rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--charcoal);
+      text-decoration: none; padding: 7px 14px;
+      border: 1px solid var(--sand); transition: all 0.3s;
+    }
+    .help-link:hover { background: var(--charcoal); color: var(--cream); border-color: var(--charcoal); }
+
+    /* ── SEARCH EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 80px 40px;
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 20px; display: block; }
+    .empty-state h3 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; margin-bottom: 10px; }
+    .empty-state p { font-size: 0.8rem; color: var(--mid); line-height: 1.8; max-width: 360px; margin: 0 auto; }
+
+    /* ── SIMULATE CONTROLS ── */
+    .simulator {
+      padding: 20px 24px;
+      background: rgba(201,169,110,0.06);
+      border: 1px dashed rgba(201,169,110,0.4);
+      margin-bottom: 32px;
+    }
+    .simulator h4 {
+      font-size: 0.62rem; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .sim-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .sim-btn {
+      padding: 7px 14px; background: none;
+      border: 1px solid var(--sand); font-family: var(--font-body);
+      font-size: 0.62rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--mid);
+      transition: all 0.3s;
+    }
+    .sim-btn:hover, .sim-btn.active { background: var(--charcoal); color: var(--cream); border-color: var(--charcoal); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--charcoal); color: var(--cream);
+      padding: 14px 28px; font-size: 0.75rem;
+      letter-spacing: 0.1em; opacity: 0;
+      transition: all 0.4s; z-index: 600;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 900px) {
+      nav { padding: 16px 20px; }
+      .track-hero { flex-direction: column; gap: 24px; padding: 32px 20px; }
+      .track-hero-search { max-width: 100%; }
+      .track-layout { grid-template-columns: 1fr; }
+      .track-left { padding: 32px 20px; }
+      .track-right { border-left: none; border-top: 1px solid var(--sand); padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div class="toast" id="toast"></div>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-link">← Back to Store</a>
+    <a href="index.html" class="nav-logo">LUMIÈRE<span>.</span></a>
+    <a href="checkout.html" class="nav-link">Checkout →</a>
+  </nav>
+
+  <!-- HERO SEARCH -->
+  <div class="track-hero">
+    <div class="track-hero-text">
+      <h1>Track Your <em>Order</em></h1>
+      <p>Real-time updates on your LUMIÈRE delivery</p>
+    </div>
+    <div class="track-hero-search">
+      <input class="track-input" type="text" id="searchInput" placeholder="Enter Order ID e.g. LM-ABC123" />
+      <button class="track-btn" onclick="searchOrder()">Track</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="track-layout">
+
+    <!-- LEFT -->
+    <div class="track-left" id="trackLeft">
+
+      <!-- Empty State (default) -->
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📦</span>
+        <h3>Track Your Package</h3>
+        <p>Enter your Order ID above to see real-time tracking updates, estimated delivery date, and delivery agent details.</p>
+        <br>
+        <p style="font-size:0.72rem; color:var(--gold)">💡 Try entering any order ID or click "Track" to see a demo</p>
+      </div>
+
+      <!-- Tracking Content (hidden initially) -->
+      <div id="trackingContent" style="display:none">
+
+        <!-- Order Header -->
+        <div class="order-header">
+          <div>
+            <span class="order-id-label">Order ID</span>
+            <div class="order-id-value" id="displayOrderId">LM-ABC123</div>
+            <div class="order-date" id="displayOrderDate">Placed on April 2, 2026</div>
+          </div>
+          <div class="order-status-pill status-shipped" id="statusPill">In Transit</div>
+        </div>
+
+        <!-- Simulator Controls -->
+        <div class="simulator">
+          <h4>✦ Simulate Order Status (Demo)</h4>
+          <div class="sim-btns">
+            <button class="sim-btn" onclick="setStatus(0)">Order Placed</button>
+            <button class="sim-btn" onclick="setStatus(1)">Confirmed</button>
+            <button class="sim-btn" onclick="setStatus(2)">Packed</button>
+            <button class="sim-btn active" onclick="setStatus(3)">Shipped</button>
+            <button class="sim-btn" onclick="setStatus(4)">Out for Delivery</button>
+            <button class="sim-btn" onclick="setStatus(5)">Delivered</button>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="map-section">
+          <span class="section-label">Live Location</span>
+          <div class="map-box">
+            <svg class="map-path" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+              <!-- Grid lines -->
+              <line x1="0" y1="50" x2="600" y2="50" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="0" y1="100" x2="600" y2="100" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="0" y1="150" x2="600" y2="150" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="100" y1="0" x2="100" y2="200" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="200" y1="0" x2="200" y2="200" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="300" y1="0" x2="300" y2="200" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="400" y1="0" x2="400" y2="200" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <line x1="500" y1="0" x2="500" y2="200" stroke="#c8b8a8" stroke-width="0.5" opacity="0.4"/>
+              <!-- Route path -->
+              <path d="M 100 130 Q 150 80 200 100 Q 280 120 330 90 Q 400 60 500 70"
+                stroke="#c9a96e" stroke-width="2.5" fill="none" stroke-dasharray="6 3" opacity="0.8"/>
+              <!-- Completed route -->
+              <path d="M 100 130 Q 150 80 200 100 Q 280 120 330 90"
+                stroke="#4a7c5a" stroke-width="2.5" fill="none" id="completedRoute"/>
+            </svg>
+            <div class="map-pin origin">🏭</div>
+            <div class="map-pin current" id="currentPin">🚚</div>
+            <div class="map-pin dest">🏠</div>
+          </div>
+        </div>
+
+        <!-- Progress Steps -->
+        <div>
+          <span class="section-label">Delivery Progress</span>
+          <div class="progress-track">
+            <div class="progress-line">
+              <div class="progress-line-fill" id="progressFill" style="height: 60%"></div>
+            </div>
+            <div class="progress-steps" id="progressSteps">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Updates -->
+        <div class="live-updates">
+          <span class="section-label">Activity Log</span>
+          <div id="updatesList">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="track-right">
+
+      <div id="rightEmpty" style="padding: 40px 0; text-align:center; color:var(--mid)">
+        <span style="font-size:2rem; display:block; margin-bottom:12px">🛍️</span>
+        <p style="font-size:0.8rem; line-height:1.8">Your order details will appear here once you enter your Order ID.</p>
+      </div>
+
+      <div id="rightContent" style="display:none">
+
+        <!-- ETA -->
+        <div class="eta-card">
+          <div class="eta-label">Estimated Delivery</div>
+          <div class="eta-date" id="etaDate">April 6, 2026</div>
+          <div class="eta-sub" id="etaSub">By 8:00 PM · 3 days remaining</div>
+        </div>
+
+        <!-- Delivery Agent -->
+        <div class="agent-card" id="agentCard">
+          <div class="agent-avatar">🧑</div>
+          <div>
+            <div class="agent-name">Ravi Kumar</div>
+            <div class="agent-label">Delivery Partner · Delhivery</div>
+          </div>
+          <div class="agent-actions">
+            <button class="agent-btn" onclick="showToast('Calling delivery agent...')">📞</button>
+            <button class="agent-btn" onclick="showToast('Opening chat...')">💬</button>
+          </div>
+        </div>
+
+        <!-- Section Title -->
+        <h3 class="section-title-sm" style="margin-bottom:16px">Your <span>Items</span></h3>
+
+        <!-- Order Items -->
+        <div class="order-items-list" id="trackItems"></div>
+
+        <!-- Delivery Address -->
+        <div class="delivery-card">
+          <h4>Delivering To</h4>
+          <div class="delivery-name" id="deliveryName">Priya Sharma</div>
+          <div class="delivery-addr" id="deliveryAddr">
+            Flat 4B, Sunshine Apartments<br>
+            Koramangala, Bengaluru<br>
+            Karnataka — 560034
+          </div>
+        </div>
+
+        <!-- Help -->
+        <div class="help-card">
+          <p>Need help with your order? Our team is available 9 AM – 8 PM, Mon–Sat.</p>
+          <div class="help-links">
+            <a href="#" class="help-link" onclick="showToast('Opening support chat...')">Chat with Us</a>
+            <a href="#" class="help-link" onclick="showToast('Raising return request...')">Return Item</a>
+            <a href="#" class="help-link" onclick="showToast('Downloading invoice...')">Invoice</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── CURSOR ──
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+    });
+    document.querySelectorAll('a, button, input').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+      el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+    });
+
+    // ── DATA ──
+    const orderData = {
+      id: 'LM-ABC123',
+      date: 'April 2, 2026',
+      items: [
+        { name: 'Ivory Linen Maxi Dress', variant: 'Size: M · Ivory', price: 2499, qty: 1, emoji: '👗' },
+        { name: 'Terracotta Floral Co-ord', variant: 'Size: S · Terracotta', price: 3199, qty: 1, emoji: '👘' },
+      ],
+      customer: 'Priya Sharma',
+      address: 'Flat 4B, Sunshine Apartments\nKoramangala, Bengaluru\nKarnataka — 560034',
+      agent: 'Ravi Kumar',
+      courier: 'Delhivery',
+    };
+
+    const statuses = [
+      {
+        name: 'Order Placed',
+        icon: '🛒',
+        desc: 'Your order has been placed successfully.',
+        time: 'Apr 2, 2026 · 10:32 AM',
+        pill: 'Order Placed', pillClass: 'status-processing',
+        fill: '5%',
+        eta: 'April 6, 2026', etaSub: 'By 8:00 PM · 4 days remaining',
+        agentVisible: false,
+        updates: [
+          { dot: 'green', text: 'Order #LM-ABC123 placed successfully', loc: 'LUMIÈRE Store · Online', time: '10:32 AM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: '10:32 AM' },
+        ]
+      },
+      {
+        name: 'Order Confirmed',
+        icon: '✅',
+        desc: 'Seller has confirmed your order.',
+        time: 'Apr 2, 2026 · 11:00 AM',
+        pill: 'Confirmed', pillClass: 'status-processing',
+        fill: '20%',
+        eta: 'April 6, 2026', etaSub: 'By 8:00 PM · 4 days remaining',
+        agentVisible: false,
+        updates: [
+          { dot: 'green', text: 'Order confirmed by LUMIÈRE warehouse', loc: 'Warehouse · Bengaluru', time: '11:00 AM' },
+          { dot: 'green', text: 'Order #LM-ABC123 placed successfully', loc: 'LUMIÈRE Store · Online', time: '10:32 AM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: '10:32 AM' },
+        ]
+      },
+      {
+        name: 'Packed & Ready',
+        icon: '📦',
+        desc: 'Your order has been packed and is ready for pickup.',
+        time: 'Apr 2, 2026 · 2:45 PM',
+        pill: 'Packed', pillClass: 'status-processing',
+        fill: '40%',
+        eta: 'April 5, 2026', etaSub: 'By 8:00 PM · 3 days remaining',
+        agentVisible: false,
+        updates: [
+          { dot: 'green', text: 'Package packed and QR label generated', loc: 'Warehouse · Bengaluru', time: '2:45 PM' },
+          { dot: 'green', text: 'Quality check passed — 2 items verified', loc: 'Warehouse · Bengaluru', time: '2:30 PM' },
+          { dot: 'green', text: 'Order confirmed by LUMIÈRE warehouse', loc: 'Warehouse · Bengaluru', time: '11:00 AM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: '10:32 AM' },
+        ]
+      },
+      {
+        name: 'Shipped',
+        icon: '🚚',
+        desc: 'Your order is on its way to the delivery hub.',
+        time: 'Apr 3, 2026 · 9:15 AM',
+        pill: 'In Transit', pillClass: 'status-shipped',
+        fill: '60%',
+        eta: 'April 5, 2026', etaSub: 'By 8:00 PM · 2 days remaining',
+        agentVisible: true,
+        updates: [
+          { dot: 'green', text: 'Shipment picked up by Delhivery', loc: 'Bengaluru South Hub', time: '9:15 AM' },
+          { dot: 'green', text: 'In transit to delivery hub', loc: 'Bengaluru Central · Karnataka', time: 'Apr 3, 8:00 AM' },
+          { dot: 'green', text: 'Package packed and QR label generated', loc: 'Warehouse · Bengaluru', time: 'Apr 2, 2:45 PM' },
+          { dot: 'green', text: 'Order confirmed by LUMIÈRE warehouse', loc: 'Warehouse · Bengaluru', time: 'Apr 2, 11:00 AM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: 'Apr 2, 10:32 AM' },
+        ]
+      },
+      {
+        name: 'Out for Delivery',
+        icon: '🛵',
+        desc: 'Your package is out for delivery today!',
+        time: 'Apr 5, 2026 · 8:30 AM',
+        pill: 'Out for Delivery', pillClass: 'status-outfordelivery',
+        fill: '85%',
+        eta: 'Today, April 5', etaSub: 'Expected by 6:00 PM today',
+        agentVisible: true,
+        updates: [
+          { dot: 'green', text: '🛵 Ravi Kumar is out for delivery with your package', loc: 'Koramangala, Bengaluru', time: '8:30 AM' },
+          { dot: 'green', text: 'Package arrived at local delivery hub', loc: 'Koramangala Hub · Bengaluru', time: '7:45 AM' },
+          { dot: 'green', text: 'Shipment picked up by Delhivery', loc: 'Bengaluru South Hub', time: 'Apr 3, 9:15 AM' },
+          { dot: 'green', text: 'Package packed and QR label generated', loc: 'Warehouse · Bengaluru', time: 'Apr 2, 2:45 PM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: 'Apr 2, 10:32 AM' },
+        ]
+      },
+      {
+        name: 'Delivered',
+        icon: '🎉',
+        desc: 'Package delivered successfully. Enjoy your LUMIÈRE pieces!',
+        time: 'Apr 5, 2026 · 5:47 PM',
+        pill: 'Delivered ✓', pillClass: 'status-delivered',
+        fill: '100%',
+        eta: 'Delivered!', etaSub: 'April 5, 2026 at 5:47 PM',
+        agentVisible: false,
+        updates: [
+          { dot: 'green', text: '🎉 Package delivered successfully! Signed by: Priya S.', loc: 'Koramangala, Bengaluru — 560034', time: '5:47 PM' },
+          { dot: 'green', text: '🛵 Ravi Kumar is out for delivery with your package', loc: 'Koramangala, Bengaluru', time: 'Apr 5, 8:30 AM' },
+          { dot: 'green', text: 'Package arrived at local delivery hub', loc: 'Koramangala Hub · Bengaluru', time: 'Apr 5, 7:45 AM' },
+          { dot: 'green', text: 'Shipment picked up by Delhivery', loc: 'Bengaluru South Hub', time: 'Apr 3, 9:15 AM' },
+          { dot: '', text: 'Payment confirmed via UPI', loc: 'Razorpay Gateway', time: 'Apr 2, 10:32 AM' },
+        ]
+      },
+    ];
+
+    const stepLabels = [
+      { label: 'Order Placed', icon: '🛒' },
+      { label: 'Confirmed', icon: '✅' },
+      { label: 'Packed', icon: '📦' },
+      { label: 'Shipped', icon: '🚚' },
+      { label: 'Out for Delivery', icon: '🛵' },
+      { label: 'Delivered', icon: '🎉' },
+    ];
+
+    let currentStatusIndex = 3; // Default: Shipped
+
+    function setStatus(index) {
+      currentStatusIndex = index;
+      document.querySelectorAll('.sim-btn').forEach((b, i) => {
+        b.classList.toggle('active', i === index);
+      });
+      renderTracking();
+    }
+
+    function searchOrder() {
+      const input = document.getElementById('searchInput').value.trim();
+      // Accept any input — show demo
+      if (input === '') {
+        showToast('Please enter an Order ID');
+        return;
+      }
+      // Show tracking UI
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('trackingContent').style.display = 'block';
+      document.getElementById('rightEmpty').style.display = 'none';
+      document.getElementById('rightContent').style.display = 'block';
+
+      // Set order ID from input
+      orderData.id = input.toUpperCase().startsWith('LM-') ? input.toUpperCase() : 'LM-' + input.toUpperCase();
+      renderTracking();
+      showToast('Order found! Showing tracking details ✓');
+    }
+
+    function renderTracking() {
+      const s = statuses[currentStatusIndex];
+
+      // Header
+      document.getElementById('displayOrderId').textContent = orderData.id;
+      document.getElementById('displayOrderDate').textContent = 'Placed on ' + orderData.date;
+
+      // Status pill
+      const pill = document.getElementById('statusPill');
+      pill.textContent = s.pill;
+      pill.className = 'order-status-pill ' + s.pillClass;
+
+      // ETA
+      document.getElementById('etaDate').textContent = s.eta;
+      document.getElementById('etaSub').textContent = s.etaSub;
+
+      // Agent card
+      document.getElementById('agentCard').style.display = s.agentVisible ? 'flex' : 'none';
+
+      // Progress fill
+      document.getElementById('progressFill').style.height = s.fill;
+
+      // Progress steps
+      const stepsEl = document.getElementById('progressSteps');
+      stepsEl.innerHTML = stepLabels.map((step, i) => {
+        let dotClass = 'pending';
+        let dotContent = step.icon;
+        let nameClass = 'step-name pending-text';
+        let timeClass = 'step-time pending-time';
+        let timeText = 'Pending';
+        let desc = '';
+
+        if (i < currentStatusIndex) {
+          dotClass = 'done'; dotContent = '✓';
+          nameClass = 'step-name'; timeClass = 'step-time';
+          timeText = statuses[i].time;
+          desc = statuses[i].desc;
+        } else if (i === currentStatusIndex) {
+          dotClass = 'active'; dotContent = step.icon;
+          nameClass = 'step-name'; timeClass = 'step-time';
+          timeText = s.time;
+          desc = s.desc;
+        }
+
+        return `
+          <div class="progress-step">
+            <div class="step-dot ${dotClass}">${dotContent}</div>
+            <div class="step-content">
+              <div class="${nameClass}">${step.label}</div>
+              ${desc ? `<div class="step-desc">${desc}</div>` : ''}
+              <div class="${timeClass}">${timeText}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Updates
+      const updatesEl = document.getElementById('updatesList');
+      updatesEl.innerHTML = s.updates.map((u, i) => `
+        <div class="update-item" style="animation-delay:${i * 0.08}s">
+          <div class="update-dot ${u.dot}"></div>
+          <div style="flex:1">
+            <div class="update-text">${u.text}</div>
+            <div class="update-location">📍 ${u.loc}</div>
+          </div>
+          <div class="update-time">${u.time}</div>
+        </div>
+      `).join('');
+
+      // Order items
+      const itemsEl = document.getElementById('trackItems');
+      itemsEl.innerHTML = orderData.items.map(item => `
+        <div class="track-item">
+          <div class="track-item-img">
+            ${item.emoji}
+            <span class="track-item-qty">${item.qty}</span>
+          </div>
+          <div>
+            <div class="track-item-name">${item.name}</div>
+            <div class="track-item-variant">${item.variant}</div>
+            <div class="track-item-price">₹${(item.price * item.qty).toLocaleString()}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // Delivery address
+      document.getElementById('deliveryName').textContent = orderData.customer;
+      document.getElementById('deliveryAddr').innerHTML = orderData.address.replace(/\n/g, '<br>');
+
+      // Move current pin position based on status
+      const pinPositions = ['20%', '30%', '40%', '55%', '72%', '83%'];
+      const pin = document.getElementById('currentPin');
+      pin.style.left = pinPositions[currentStatusIndex];
+      pin.textContent = currentStatusIndex === 5 ? '🏠' : (currentStatusIndex === 4 ? '🛵' : '🚚');
+    }
+
+    // ── AUTO-LOAD if coming from checkout ──
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order');
+    if (orderId) {
+      document.getElementById('searchInput').value = orderId;
+      searchOrder();
+    }
+
+    // ── TOAST ──
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>

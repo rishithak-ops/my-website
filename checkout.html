@@ -462,7 +462,7 @@
     <p class="order-id" id="orderId">Order #LM-000000</p>
     <div class="success-actions">
       <a href="index.html" class="btn-primary">Continue Shopping</a>
-      <a href="#" class="btn-outline">Track Order</a>
+      <a href="#" class="btn-outline" id="trackOrderBtn">Track Order</a>
     </div>
   </div>
 
@@ -942,6 +942,7 @@
     function showSuccess() {
       const orderId = 'LM-' + Math.random().toString(36).substring(2, 8).toUpperCase();
       document.getElementById('orderId').textContent = `Order #${orderId}`;
+      document.getElementById('trackOrderBtn').href = `tracking.html?order=${orderId}`;
       document.getElementById('successScreen').classList.add('show');
     }
 
